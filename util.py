@@ -1,6 +1,9 @@
 from propername import propername_data_loader
 from newsgroup import newsgroup_data_loader
 
+import pandas as pd 
+import numpy as np 
+
 def save_results(predictions, results_path):
     """ Saves the predictions to a file.
 
@@ -9,6 +12,8 @@ def save_results(predictions, results_path):
         results_path (str): Filename to save predictions to
     """
     # TODO: Implement saving of the results.
+    pred = pd.DataFrame(predictions)
+    pred.to_csv(results_path)
     pass
 
 def compute_accuracy(labels, predictions):
@@ -23,8 +28,12 @@ def compute_accuracy(labels, predictions):
     if len(labels) != len(predictions):
         raise ValueError("Length of labels (" + str(len(labels)) + " not the same as " \
                          "length of predictions (" + str(len(predictions)) + ".")
-    # TODO: Implement accuracy computation.
-    return 0.
+
+    correct = 0
+    for sample in range(len(predictions)):
+        if predictions[sample] == labels[sample]:
+            correct += 1
+    return (correct / len(labels))
 
 def evaluate(model, data, results_path):
     """ Evaluates a dataset given the model.
@@ -65,10 +74,10 @@ def load_data(args):
                         + "Args was: " + str(args)
 
     # Load the data. 
-    train_data, dev_data, test_data = data_loader("data/" + data_type + "/train/train_data.csv",
+    train_data, dev_data, test_data, label_dict = data_loader("data/" + data_type + "/train/train_data.csv",
                                                   "data/" + data_type + "/train/train_labels.csv",
                                                   "data/" + data_type + "/dev/dev_data.csv",
                                                   "data/" + data_type + "/dev/dev_labels.csv",
                                                   "data/" + data_type + "/test/test_data.csv")
 
-    return train_data, dev_data, test_data, data_type
+    return train_data, dev_data, test_data, data_type, label_dict

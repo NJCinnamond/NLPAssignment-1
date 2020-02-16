@@ -5,6 +5,7 @@ You can change this code however you like. This is just for inspiration.
 """
 import os
 import sys
+import numpy as np
 
 from util import evaluate, load_data
 
@@ -12,12 +13,20 @@ class PerceptronModel():
     """ Maximum entropy model for classification.
 
     Attributes:
+    (float) weights
+    (float) bias
+    (int) num_dim
+    (bool) add_bias
 
     """
-    def __init__(self):
-        # Initialize the parameters of the model.
-        # TODO: Implement initialization of this model.
-        pass
+    def __init__(self, label_to_index, lr=0.02):
+        self.W = None
+        self.bias = None
+        self.lr = lr
+        self.num_dim = 0
+        self.num_class = len(label_to_index)
+        self.label_to_index = label_to_index
+        self.index_to_label = {v: k for k, v in label_to_index.items()}
 
     def train(self, training_data):
         """ Trains the maximum entropy model.
@@ -26,9 +35,43 @@ class PerceptronModel():
             training_data: Suggested type is (list of pair), where each item is
                 a training example represented as an (input, label) pair.
         """
-        # Optimize the model using the training data.
-        # TODO: Implement the training of this model.
-        pass
+
+        self.num_dim = len(training_data[0][0])
+        self.num_epochs = 6
+        self.W = {c: np.array([0.0 for _ in range(self.num_dim)]) for c in self.label_to_index.keys()}
+
+        epoch = 0
+        change_over_epoch = True
+        while change_over_epoch and epoch < self.num_epochs:
+            epoch += 1
+            correct = 0
+            change_over_epoch = False
+
+            for sample in training_data:
+                #Get numerical value of label
+                label = sample[1]
+                if sample[1] not in self.label_to_index.keys():
+                    label = self.index_to_label[0]
+
+                # Initialize arg_max value, predicted class.
+                arg_max, predicted_label = 0, self.index_to_label[0]
+
+                # Multi-Class Decision Rule:
+                for c in self.label_to_index.keys():
+                    current_activation = np.dot(sample[0], self.W[c])
+                    if current_activation >= arg_max:
+                        arg_max, predicted_label = current_activation, c
+
+                # Update Rule:
+                if not (label == predicted_label):
+                    change_over_epoch = True
+                    self.W[label] += np.dot(self.lr, sample[0])
+                    self.W[predicted_label] -= np.dot(self.lr, sample[0])
+                else:
+                    correct += 1
+            
+            acc = correct / len(training_data)
+            print("Accuracy: ", str(acc))
 
     def predict(self, model_input):
         """ Predicts a label for an input.
@@ -41,21 +84,38 @@ class PerceptronModel():
             The predicted class.    
 
         """
-        # TODO: Implement prediction for an input.
-        return None
+        # Initialize predicted label to UNK token
+        arg_max, predicted_label = 0, self.index_to_label[0]
+
+        # Multi-Class Decision Rule:
+        for c in self.label_to_index.keys():
+            current_activation = np.dot(model_input, self.W[c])
+            if current_activation >= arg_max:
+                arg_max, predicted_label = current_activation, c
+
+        return predicted_label
+
+def create_dummy_bias(data):
+    for sample in data:
+        sample[0].append(1)
+    return data 
 
 if __name__ == "__main__":
-    train_data, dev_data, test_data, data_type = load_data(sys.argv)
+    train_data, dev_data, test_data, data_type, label_dict = load_data(sys.argv)
+
+    train_data = create_dummy_bias(train_data)
+    dev_data = create_dummy_bias(dev_data)
+    test_data = create_dummy_bias(test_data)
 
     # Train the model using the training data.
-    model = PerceptronModel()
+    model = PerceptronModel(label_to_index=label_dict)
     model.train(train_data)
 
     # Predict on the development set. 
     dev_accuracy = evaluate(model,
                             dev_data,
                             os.path.join("results", "perceptron_" + data_type + "_dev_predictions.csv"))
-
+    print("Dev accuracy: ", dev_accuracy)
     # Predict on the test set.
     # Note: We don't provide labels for test, so the returned value from this
     # call shouldn't make sense.
