@@ -1,5 +1,6 @@
 import pandas as pd 
 import numpy as np 
+import string
 
 def propername_featurize(input_data, n_grams, data_dict, label_dict, use_mask=True):
     """ Featurizes an input for the proper name domain.
@@ -13,7 +14,7 @@ def propername_featurize(input_data, n_grams, data_dict, label_dict, use_mask=Tr
         feat = np.zeros(len(data_dict))
 
         label = input_data[idx,1]
-
+        input_data[idx,0] = input_data[idx,0]#.lower()
         for n in n_grams:
             chars = [char for char in input_data[idx,0]]
             if use_mask and n > 2:
@@ -22,6 +23,8 @@ def propername_featurize(input_data, n_grams, data_dict, label_dict, use_mask=Tr
             for c in range(len(chars) - n):
                 n_gram = ''.join(chars[c:c+n])
                 if n_gram not in data_dict:
+                    #If you don't want UNK, just continue
+                    #continue
                     n_gram = '<UNK>'
                 feat[data_dict[n_gram]] = 1
         
@@ -50,7 +53,7 @@ def propername_data_loader(train_data_filename,
     """
 
     USE_MASK = True
-    N_GRAMS = [3]
+    N_GRAMS = [2,3]
 
     # TODO: Load the data from the text format.
     train_data = pd.read_csv(train_data_filename)
@@ -66,6 +69,8 @@ def propername_data_loader(train_data_filename,
 
     # TODO: Featurize the input data for all three splits.
     data_dict, label_dict = create_dicts(train, N_GRAMS, use_mask=USE_MASK)
+
+    print("data dict len: ", len(data_dict))
 
     train = propername_featurize(train, N_GRAMS, data_dict, label_dict, use_mask=USE_MASK)
     dev = propername_featurize(dev, N_GRAMS, data_dict, label_dict, use_mask=USE_MASK)
@@ -108,7 +113,7 @@ def create_dicts(input_data, n_grams, use_mask=True):
 
     for n_gram in n_grams:
         for row in input_data:
-            text = row[0]
+            text = row[0]#.lower()
             label = row[1]
 
             if label not in label_dict:

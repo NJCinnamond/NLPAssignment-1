@@ -8,6 +8,7 @@ import sys
 import numpy as np
 
 from util import evaluate, load_data
+from sklearn.metrics import confusion_matrix
 
 class PerceptronModel():
     """ Maximum entropy model for classification.
@@ -37,12 +38,13 @@ class PerceptronModel():
         """
 
         self.num_dim = len(training_data[0][0])
-        self.num_epochs = 6
+        self.num_epochs = 5
         self.W = {c: np.array([0.0 for _ in range(self.num_dim)]) for c in self.label_to_index.keys()}
 
         epoch = 0
         change_over_epoch = True
         while change_over_epoch and epoch < self.num_epochs:
+            print("Epoch: ", epoch)
             epoch += 1
             correct = 0
             change_over_epoch = False
@@ -101,24 +103,37 @@ def create_dummy_bias(data):
     return data 
 
 if __name__ == "__main__":
+    print("Getting data")
     train_data, dev_data, test_data, data_type, label_dict = load_data(sys.argv)
-
+    print("Got data")
     train_data = create_dummy_bias(train_data)
     dev_data = create_dummy_bias(dev_data)
     test_data = create_dummy_bias(test_data)
+
+    print(len(train_data))
+    print(len(dev_data))
+    print(len(test_data))
 
     # Train the model using the training data.
     model = PerceptronModel(label_to_index=label_dict)
     model.train(train_data)
 
     # Predict on the development set. 
+    '''
     dev_accuracy = evaluate(model,
                             dev_data,
                             os.path.join("results", "perceptron_" + data_type + "_dev_predictions.csv"))
     print("Dev accuracy: ", dev_accuracy)
+    '''
+    pred_label = [model.predict(example[0]) for example in dev_data]
+    true_label = [example[1] for example in dev_data]
+    conf_mat = confusion_matrix(true_label, pred_label, 
+            labels=np.sort(np.unique(true_label)))
+    print(conf_mat)
+    print(np.sort(np.unique(true_label)))
     # Predict on the test set.
     # Note: We don't provide labels for test, so the returned value from this
     # call shouldn't make sense.
-    evaluate(model,
-             test_data,
-             os.path.join("results", "perceptron_" + data_type + "_test_predictions.csv"))
+    #evaluate(model,
+    #         test_data,
+    #         os.path.join("results", "perceptron_" + data_type + "_test_predictions.csv"))
